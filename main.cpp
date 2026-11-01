@@ -2,9 +2,11 @@
 #include <string>
 #include <vector>
 #include <sstream>
-#include <unistd.h>   
+#include <cstdlib>     
+#include <unistd.h>    
 #include <sys/wait.h>  
-#include<cstdlib>
+#include <fcntl.h>     
+
 std::vector<std::string> razdvoji(const std::string& linija) {
     std::vector<std::string> rijeci;
     std::istringstream ulaz(linija);
@@ -16,16 +18,41 @@ std::vector<std::string> razdvoji(const std::string& linija) {
 }
 
 void pokreni(const std::vector<std::string>& rijeci) {
-    // execvp traži niz običnih C stringova koji završava sa nullptr
+    // 1. nađi ">" i izdvoji ime datoteke
+    std::string datoteka;
+    std::vector<std::string> args;
+    for (size_t i = 0; i < rijeci.size(); i++) {
+        if (rijeci[i] == ">" && i + 1 < rijeci.size()) {
+            datoteka = rijeci[i + 1];
+            i++;   // preskoči i ime datoteke
+        } else {
+            args.push_back(rijeci[i]);
+        }
+    }
+
+    // ako je ostalo samo "> datoteka" bez komande, nema šta pokrenuti
+    if (args.empty())
+        return;
+
+    // 2. argv pravimo od args (bez ">" i imena datoteke)
     std::vector<char*> argv;
-    for (const auto& r : rijeci)
+    for (const auto& r : args)
         argv.push_back(const_cast<char*>(r.c_str()));
     argv.push_back(nullptr);
 
     pid_t pid = fork();
 
     if (pid == 0) {
-        // DIJETE: pretvori se u traženi program
+        // DIJETE: prvo preusmjeri izlaz, pa pokreni program
+        if (!datoteka.empty()) {
+            int fd = open(datoteka.c_str(), O_WRONLY | O_CREAT | O_TRUNC, 0644);
+            if (fd == -1) {
+                perror("moj-shell");
+                _exit(1);
+            }
+            dup2(fd, 1);
+            close(fd);
+        }
         execvp(argv[0], argv.data());
         // ovdje stižemo samo ako execvp nije uspio
         perror("moj-shell");
@@ -52,17 +79,20 @@ int main() {
         std::vector<std::string> rijeci = razdvoji(linija);
         if (rijeci.empty())
             continue;  // prazna linija, samo novi prompt
- if(rijeci[0]=="cd"){
-const char *putanja;
-if(rijeci.size()>1)
-putanja=rijeci[1].c_str();
-else
-putanja=getenv("HOME");
 
-if(chdir(putanja)==-1)
-perror("cd");
-continue;
-}
+        // ugrađena komanda cd
+        if (rijeci[0] == "cd") {
+            const char* putanja;
+            if (rijeci.size() > 1)
+                putanja = rijeci[1].c_str();
+            else
+                putanja = getenv("HOME");
+
+            if (chdir(putanja) == -1)
+                perror("cd");
+            continue;
+        }
+
         pokreni(rijeci);
     }
     return 0;
