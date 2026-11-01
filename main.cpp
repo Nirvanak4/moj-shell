@@ -2,9 +2,9 @@
 #include <string>
 #include <vector>
 #include <sstream>
-#include <unistd.h>    // fork, execvp, _exit
-#include <sys/wait.h>  // waitpid
-
+#include <unistd.h>   
+#include <sys/wait.h>  
+#include<cstdlib>
 std::vector<std::string> razdvoji(const std::string& linija) {
     std::vector<std::string> rijeci;
     std::istringstream ulaz(linija);
@@ -52,7 +52,17 @@ int main() {
         std::vector<std::string> rijeci = razdvoji(linija);
         if (rijeci.empty())
             continue;  // prazna linija, samo novi prompt
+ if(rijeci[0]=="cd"){
+const char *putanja;
+if(rijeci.size()>1)
+putanja=rijeci[1].c_str();
+else
+putanja=getenv("HOME");
 
+if(chdir(putanja)==-1)
+perror("cd");
+continue;
+}
         pokreni(rijeci);
     }
     return 0;
