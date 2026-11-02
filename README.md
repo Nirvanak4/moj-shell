@@ -46,6 +46,6 @@ moj-shell> exit
 - [x] Petlja za unos i parsiranje
 - [x] Pokretanje programa (`fork`/`exec`/`wait`)
 - [x] Ugrađena komanda `cd`
-- [ ] Preusmjeravanje (`>`)
-- [ ] Pipe (`|`)
-- [ ] Pozadinski procesi (`&`)
+- [x] Preusmjeravanje (`>`)
+- [x] Pipe (`|`)
+- [x] Pozadinski procesi (`&`)
