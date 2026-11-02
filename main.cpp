@@ -53,11 +53,14 @@ void izvrsi(const std::vector<std::string>& rijeci) {
 }
 
 
-void pokreni(const std::vector<std::string>& rijeci) {
+void pokreni(const std::vector<std::string>& rijeci, bool pozadina) {
     pid_t pid = fork();
     if (pid == 0) {
         izvrsi(rijeci);
     } else if (pid > 0) {
+if(pozadina)
+std::cout<<"[pokrenuto u pozadini, PID "<<pid<<"]"<<std::endl;
+else
         waitpid(pid, nullptr, 0);
     } else {
         perror("fork");
@@ -110,7 +113,13 @@ int main() {
         std::vector<std::string> rijeci = razdvoji(linija);
         if (rijeci.empty())
             continue;
-
+bool pozadina=false;
+if(rijeci.back()=="&"){
+pozadina=true;
+rijeci.pop_back();
+if(rijeci.empty())
+continue;
+}
        
         if (rijeci[0] == "cd") {
             const char* putanja;
@@ -134,7 +143,7 @@ int main() {
         }
 
         if (poz == rijeci.size()) {
-            pokreni(rijeci);                      
+            pokreni(rijeci, pozadina);                      
         } else if (poz == 0 || poz == rijeci.size() - 1) {
             std::cout << "moj-shell: pogresna upotreba |" << std::endl;
         } else {
